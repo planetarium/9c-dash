@@ -15,19 +15,24 @@ layout_template = dict(
                     label="1h",
                     step="hour",
                     stepmode="backward"),
-                dict(count=6,
-                    label="6h",
+                dict(count=12,
+                    label="12h",
                     step="hour",
                     stepmode="backward"),
-                dict(count=24,
-                    label="24h",
-                    step="hour",
+                dict(count=1,
+                    label="1d",
+                    step="day",
                     stepmode="backward"),
-                dict(step="all")
+                dict(count=7,
+                    label="7d",
+                    step="day",
+                    stepmode="backward"),
+                dict(step="all"),
             ])
         ),
         type="date"
-    )
+    ),
+    hovermode="x",
 )
 
 def get_node_lag_fig(tables: list[Table]):
@@ -57,11 +62,13 @@ def get_peers_count_fig(tables: list[Table]):
         "timestamp": timestamps,
         "all_peers": [len(table.remotes) for table in tables],
         "high_peers": [
-            len([remote for remote in table.remotes if remote.tip >= table.local.tip])
+            len([remote for remote in table.remotes
+                if remote.tip >= table.local.tip])
                 for table in tables
         ],
         "low_peers": [
-            len([remote for remote in table.remotes if remote.tip < table.local.tip])
+            len([remote for remote in table.remotes
+                if 0 <= remote.tip and remote.tip < table.local.tip])
                 for table in tables
         ],
         "dead_peers": [

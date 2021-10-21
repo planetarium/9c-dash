@@ -41,36 +41,39 @@ def load_blocks() -> list[Block]:
 def serve_layout():
     tables = load_tables()
     blocks = load_blocks()
-    return html.Div(children=[
-        html.H1(children='Nine Chronicles Dash'),
-
-        html.Div(children=[
-            dcc.Graph(
-                id="lag",
-                figure=graphs.get_node_lag_fig(tables),
+    return html.Div(
+        dbc.Col(html.Div([
+            html.H1(children='Nine Chronicles Dash'),
+            html.Div(
+                children=[
+                    dcc.Graph(
+                        id="lag",
+                        figure=graphs.get_node_lag_fig(tables),
+                    ),
+                    dcc.Graph(
+                        id="count",
+                        figure=graphs.get_peers_count_fig(tables),
+                    ),
+                    dcc.Graph(
+                        id="transactions",
+                        figure=graphs.get_transactions_count_fig(blocks),
+                    ),
+                    dcc.Graph(
+                        id="difficulty",
+                        figure=graphs.get_difficulty_fig(blocks),
+                    ),
+                    dcc.Graph(
+                        id="mining_time",
+                        figure=graphs.get_mining_time(blocks),
+                    ),
+                    dcc.Graph(
+                        id="mining_time_vs_transactions",
+                        figure=graphs.get_mining_time_vs_transactions(blocks),
+                    ),
+                ]
             ),
-            dcc.Graph(
-                id="count",
-                figure=graphs.get_peers_count_fig(tables),
-            ),
-            dcc.Graph(
-                id="transactions",
-                figure=graphs.get_transactions_count_fig(blocks),
-            ),
-            dcc.Graph(
-                id="difficulty",
-                figure=graphs.get_difficulty_fig(blocks),
-            ),
-            dcc.Graph(
-                id="mining_time",
-                figure=graphs.get_mining_time(blocks),
-            ),
-            dcc.Graph(
-                id="mining_time_vs_transactions",
-                figure=graphs.get_mining_time_vs_transactions(blocks),
-            ),
-        ]),
-    ])
+        ]), width={"size": 8, "offset": 2}),
+    )
 
 app.layout = serve_layout
 
