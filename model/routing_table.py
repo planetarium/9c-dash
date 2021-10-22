@@ -3,20 +3,25 @@ import datetime
 import json
 from model.peer import Peer
 
-class Table:
+class RoutingTable:
     def __init__(
         self,
         timestamp: float,
         peers: list[str],
     ):
         self._timestamp = timestamp
-        self._local = Peer.from_dict(peers[0])
-        self._remotes = [Peer.from_dict(peer) for peer in peers[1:]]
+        self._peers = [Peer.from_dict(peer) for peer in peers]
+        self._local = self.peers[0]
+        self._remotes = self.peers[1:]
         return
 
     @property
     def timestamp(self) -> float:
         return self._timestamp
+
+    @property
+    def peers(self) -> list[Peer]:
+        return self._peers
 
     @property
     def local(self) -> Peer:
@@ -43,29 +48,18 @@ class Table:
                 [peer.tip - self._local.tip for peer in self._remotes] + [0]
             )
 
-    def to_row(self) -> list[dict]:
-        return [json.dumps(self.to_dict())]
-
     def to_dict(self) -> dict:
         return {
             "timestamp": self.timestamp,
-            "peers": [
-                self.local.to_dict()
-            ] + [
-                peer.to_dict() for peer in self.remotes
-            ],
+            "peers": [peer.to_dict() for peer in self.peers],
         }
 
     def __repr__(self) -> str:
         return json.dumps(self.to_dict(), indent=4)
 
     @classmethod
-    def from_row(cls, row: list[dict]) -> Table:
-        return cls.from_dict(json.loads(row[0]))
-
-    @classmethod
-    def from_dict(cls, dict_: dict) -> Table:
-        return Table(**dict_)
+    def from_dict(cls, dict_: dict) -> RoutingTable:
+        return RoutingTable(**dict_)
 
     @classmethod
     def raw_to_dict(cls, raw: list[str]) -> dict:

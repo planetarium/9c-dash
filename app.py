@@ -11,8 +11,9 @@ import dash_bootstrap_components as dbc
 import sqlite3
 import const
 import graphs
-from model.table import Table
-from model.block import Block
+import blocks_db_util
+import routing_tables_db_util
+from model import Block, RoutingTable, Peer
 
 server = flask.Flask(__name__)
 app = dash.Dash(
@@ -22,25 +23,9 @@ app = dash.Dash(
     external_stylesheets=[dbc.themes.BOOTSTRAP],
 )
 
-def load_tables() -> list[Table]:
-    con = sqlite3.connect(const.peers_db_path)
-    cur = con.cursor()
-    rows = cur.execute("SELECT * FROM peers").fetchall()
-    con.commit()
-    con.close()
-    return [Table.from_row(row) for row in rows]
-
-def load_blocks() -> list[Block]:
-    con = sqlite3.connect(const.chain_db_path)
-    cur = con.cursor()
-    rows = cur.execute("SELECT * FROM chain").fetchall()
-    con.commit()
-    con.close()
-    return [Block.from_row(row) for row in rows]
-
 def serve_layout():
-    tables = load_tables()
-    blocks = load_blocks()
+    routing_tables = routing_tables_db_util.load_routing_tables()
+    blocks = blocks_db_util.load_blocks()
     return html.Div(
         dbc.Col(html.Div([
             html.H1(children='Nine Chronicles Dash'),
@@ -48,11 +33,11 @@ def serve_layout():
                 children=[
                     dcc.Graph(
                         id="lag",
-                        figure=graphs.get_node_lag_fig(tables),
+                        figure=graphs.get_node_lag_fig(routing_tables),
                     ),
                     dcc.Graph(
                         id="count",
-                        figure=graphs.get_peers_count_fig(tables),
+                        figure=graphs.get_peers_count_fig(routing_tables),
                     ),
                     dcc.Graph(
                         id="transactions",
@@ -83,4 +68,3 @@ def index():
 
 if __name__ == '__main__':
     app.run_server(debug=True)
-
