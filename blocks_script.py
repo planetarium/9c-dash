@@ -34,41 +34,39 @@ if __name__ == "__main__":
 
     limits = [16, 64, 256, 1024]
     while True:
-        # try:
-        old_blocks = blocks_db_util.load_blocks()
-
-        if not old_blocks:
-            new_blocks = get_blocks(limits[-1])
-            for block in new_blocks:
-                blocks_db_util.insert_block(block)
-        else:
-            for limit in limits:
-                new_blocks = get_blocks(limit)
-                branching_block = find_branching_block(old_blocks, new_blocks)
-                if branching_block:
-                    break
-            if branching_block:
-                blocks_to_delete = [
-                    block for block in old_blocks
-                        if block.index_ > branching_block.index_
-                ]
-                blocks_to_insert = [
-                    block for block in new_blocks
-                        if block.index_ > branching_block.index_
-                ]
-                for block in blocks_to_delete:
-                    blocks_db_util.delete_block(block)
-                for block in blocks_to_insert:
+        try:
+            old_blocks = blocks_db_util.load_blocks()
+            if not old_blocks:
+                new_blocks = get_blocks(limits[-1])
+                for block in new_blocks:
                     blocks_db_util.insert_block(block)
-            # something went horribly wrong
-            # start from scratch
             else:
-                blocks_db_util.drop_tables()
-                blocks_db_util.create_tables()
-
-        blocks_db_util.prune_blocks()
-        # except Exception as e:
-        #     print(e)
-        #     pass
+                for limit in limits:
+                    new_blocks = get_blocks(limit)
+                    branching_block = find_branching_block(old_blocks, new_blocks)
+                    if branching_block:
+                        break
+                if branching_block:
+                    blocks_to_delete = [
+                        block for block in old_blocks
+                            if block.index_ > branching_block.index_
+                    ]
+                    blocks_to_insert = [
+                        block for block in new_blocks
+                            if block.index_ > branching_block.index_
+                    ]
+                    for block in blocks_to_delete:
+                        blocks_db_util.delete_block(block.timestamp)
+                    for block in blocks_to_insert:
+                        blocks_db_util.insert_block(block)
+                # something went horribly wrong
+                # start from scratch
+                else:
+                    blocks_db_util.drop_tables()
+                    blocks_db_util.create_tables()
+            blocks_db_util.prune_tables()
+        except Exception as e:
+            print(e)
+            pass
 
         time.sleep(const.sleep_time)
