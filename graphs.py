@@ -3,7 +3,7 @@ import datetime
 import pandas as pd
 import plotly.express as px
 from model.block import Block
-from model.table import Table
+from model.routing_table import RoutingTable
 
 layout_template = dict(
     legend_x=0,
@@ -35,14 +35,14 @@ layout_template = dict(
     hovermode="x",
 )
 
-def get_node_lag_fig(tables: list[Table]):
+def get_node_lag_fig(routing_tables: list[RoutingTable]):
     timestamps = [
         datetime.datetime.utcfromtimestamp(table.timestamp)
-            for table in tables
+            for table in routing_tables
     ]
     df = pd.DataFrame({
         "timestamp": timestamps,
-        "lag": [table.lag for table in tables]
+        "lag": [table.lag for table in routing_tables]
     })
     fig = px.line(
         df,
@@ -53,27 +53,27 @@ def get_node_lag_fig(tables: list[Table]):
     fig.update_layout(**layout_template)
     return fig
 
-def get_peers_count_fig(tables: list[Table]):
+def get_peers_count_fig(routing_tables: list[RoutingTable]):
     timestamps = [
         datetime.datetime.utcfromtimestamp(table.timestamp)
-            for table in tables
+            for table in routing_tables
     ]
     df = pd.DataFrame({
         "timestamp": timestamps,
-        "all_peers": [len(table.remotes) for table in tables],
+        "all_peers": [len(table.remotes) for table in routing_tables],
         "high_peers": [
             len([remote for remote in table.remotes
                 if remote.tip >= table.local.tip])
-                for table in tables
+                for table in routing_tables
         ],
         "low_peers": [
             len([remote for remote in table.remotes
                 if 0 <= remote.tip and remote.tip < table.local.tip])
-                for table in tables
+                for table in routing_tables
         ],
         "dead_peers": [
             len([remote for remote in table.remotes if remote.tip < 0])
-                for table in tables
+                for table in routing_tables
         ],
     })
     fig = px.line(
@@ -92,7 +92,7 @@ def get_transactions_count_fig(blocks: list[Block]):
     ]
     df = pd.DataFrame({
         "timestamp": timestamps,
-        "transactions": [block.transactions for block in blocks]
+        "transactions": [len(block.transactions) for block in blocks]
     })
     df["rolling"] = df.transactions.rolling(100).mean()
     fig = px.line(
@@ -152,7 +152,7 @@ def get_mining_time_vs_transactions(blocks: list[Block]):
             for current, prev in zip(blocks[1:], blocks[:-1])
     ]
     transactions = [
-        block.transactions for block in blocks[:-1]
+        len(block.transactions) for block in blocks[:-1]
     ]
     df = pd.DataFrame({
         "mining_time": mining_time,

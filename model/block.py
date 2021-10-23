@@ -1,6 +1,7 @@
 from __future__ import annotations
 import datetime
 import json
+from model.transaction import Transaction
 
 class Block:
     def __init__(
@@ -10,7 +11,7 @@ class Block:
         hash_: str,
         prev: str,
         difficulty: int,
-        transactions: int,
+        transactions: list[dict],
         miner: str
     ):
         self._timestamp = timestamp
@@ -18,7 +19,10 @@ class Block:
         self._hash = hash_
         self._prev = prev
         self._difficulty = difficulty
-        self._transactions = transactions
+        self._transactions = [
+            Transaction.from_dict(transaction_dict)
+                for transaction_dict in transactions
+        ]
         self._miner = miner
         return
 
@@ -43,7 +47,7 @@ class Block:
         return self._difficulty
 
     @property
-    def transactions(self) -> int:
+    def transactions(self) -> list[Transaction]:
         return self._transactions
 
     @property
@@ -68,7 +72,9 @@ class Block:
             "hash_": self.hash_,
             "prev": self.prev,
             "difficulty": self.difficulty,
-            "transactions": self.transactions,
+            "transactions": [
+                transaction.to_dict() for transaction in self.transactions
+            ],
             "miner": self.miner,
         }
 
@@ -83,7 +89,9 @@ class Block:
             "hash_": raw["hash"],
             "prev": raw["previousBlock"]["hash"],
             "difficulty": raw["difficulty"],
-            "transactions": len(raw["transactions"]),
+            "transactions": [Transaction.raw_to_dict(transaction_raw)
+                for transaction_raw in raw["transactions"]
+            ],
             "miner": raw["miner"]
         }
 

@@ -1,7 +1,7 @@
 url = "https://9c-main-full-state.planetarium.dev/graphql"
 
-peers_db_path = "peers.db"
-peers_query = """
+routing_tables_db_path = "routing_tables.db"
+routing_table_query = """
 query {
     peerChainState {
         state
@@ -9,8 +9,8 @@ query {
 }
 """
 
-chain_db_path = "chain.db"
-chain_query = """
+blocks_db_path = "blocks.db"
+blocks_query = """
 query {
     chainQuery {
         blockQuery {
@@ -28,6 +28,9 @@ query {
                 }
                 transactions {
                     id
+                    actions {
+                        inspection
+                    }
                 }
                 miner
             }
