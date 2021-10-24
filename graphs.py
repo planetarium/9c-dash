@@ -2,40 +2,12 @@ from __future__ import annotations
 import datetime
 import pandas as pd
 import plotly.express as px
-from model.block import Block
-from model.routing_table import RoutingTable
+import blocks_db_util
+import routing_tables_db_util
+import graph_util
 
-layout_template = dict(
-    legend_x=0,
-    legend_y=1,
-    xaxis=dict(
-        rangeselector=dict(
-            buttons=list([
-                dict(count=1,
-                    label="1h",
-                    step="hour",
-                    stepmode="backward"),
-                dict(count=12,
-                    label="12h",
-                    step="hour",
-                    stepmode="backward"),
-                dict(count=1,
-                    label="1d",
-                    step="day",
-                    stepmode="backward"),
-                dict(count=7,
-                    label="7d",
-                    step="day",
-                    stepmode="backward"),
-                dict(step="all"),
-            ])
-        ),
-        type="date"
-    ),
-    hovermode="x",
-)
-
-def get_node_lag_fig(routing_tables: list[RoutingTable]):
+def get_lag_figure(start_timestamp: float, end_timestamp: float):
+    routing_tables = routing_tables_db_util.load_routing_tables(start_timestamp)
     timestamps = [
         datetime.datetime.utcfromtimestamp(table.timestamp)
             for table in routing_tables
@@ -48,30 +20,34 @@ def get_node_lag_fig(routing_tables: list[RoutingTable]):
         df,
         x="timestamp",
         y="lag",
-        title="Lag from best known height",
+        title="Height lag from best known height",
     )
-    fig.update_layout(**layout_template)
+    fig.update_layout(**graph_util.get_timeframe_layout(
+        start_timestamp,
+        end_timestamp
+    ))
     return fig
 
-def get_peers_count_fig(routing_tables: list[RoutingTable]):
+def get_remotes_count_figure(start_timestamp: float, end_timestamp: float):
+    routing_tables = routing_tables_db_util.load_routing_tables(start_timestamp)
     timestamps = [
         datetime.datetime.utcfromtimestamp(table.timestamp)
             for table in routing_tables
     ]
     df = pd.DataFrame({
         "timestamp": timestamps,
-        "all_peers": [len(table.remotes) for table in routing_tables],
-        "high_peers": [
+        "all_remotes": [len(table.remotes) for table in routing_tables],
+        "high_remotes": [
             len([remote for remote in table.remotes
                 if remote.tip >= table.local.tip])
                 for table in routing_tables
         ],
-        "low_peers": [
+        "low_remotes": [
             len([remote for remote in table.remotes
                 if 0 <= remote.tip and remote.tip < table.local.tip])
                 for table in routing_tables
         ],
-        "dead_peers": [
+        "dead_remotes": [
             len([remote for remote in table.remotes if remote.tip < 0])
                 for table in routing_tables
         ],
@@ -79,32 +55,43 @@ def get_peers_count_fig(routing_tables: list[RoutingTable]):
     fig = px.line(
         df,
         x="timestamp",
-        y=["all_peers", "high_peers", "low_peers", "dead_peers"],
-        title="Number of peers",
+        y=["all_remotes", "high_remotes", "low_remotes", "dead_remotes"],
+        title="Number of remote peers",
     )
-    fig.update_layout(**layout_template)
+    fig.update_layout(**graph_util.get_timeframe_layout(
+        start_timestamp,
+        end_timestamp
+    ))
     return fig
 
-def get_transactions_count_fig(blocks: list[Block]):
+def get_transactions_count_figure(start_timestamp: float, end_timestamp: float):
+    blocks = blocks_db_util.load_blocks(start_timestamp)
     timestamps = [
         datetime.datetime.utcfromtimestamp(block.timestamp)
             for block in blocks
     ]
     df = pd.DataFrame({
         "timestamp": timestamps,
-        "transactions": [len(block.transactions) for block in blocks]
+        "transactions_count": [len(block.transactions) for block in blocks]
     })
-    df["rolling"] = df.transactions.rolling(100).mean()
+    rolling_interval = 50
+    df[f"rolling_{rolling_interval}"] = (
+        df["transactions_count"].rolling(rolling_interval).mean()
+    )
     fig = px.line(
         df,
         x="timestamp",
-        y=["transactions", "rolling"],
+        y=["transactions_count", f"rolling_{rolling_interval}"],
         title="Number of transactions",
     )
-    fig.update_layout(**layout_template)
+    fig.update_layout(**graph_util.get_timeframe_layout(
+        start_timestamp,
+        end_timestamp
+    ))
     return fig
 
-def get_difficulty_fig(blocks: list[Block]):
+def get_difficulty_figure(start_timestamp: float, end_timestamp: float):
+    blocks = blocks_db_util.load_blocks(start_timestamp)
     timestamps = [
         datetime.datetime.utcfromtimestamp(block.timestamp)
             for block in blocks
@@ -113,17 +100,24 @@ def get_difficulty_fig(blocks: list[Block]):
         "timestamp": timestamps,
         "difficulty": [block.difficulty for block in blocks]
     })
-    df["rolling"] = df.difficulty.rolling(100).mean()
+    rolling_interval = 50
+    df[f"rolling_{rolling_interval}"] = (
+        df["difficulty"].rolling(rolling_interval).mean()
+    )
     fig = px.line(
         df,
         x="timestamp",
-        y=["difficulty", "rolling"],
+        y=["difficulty", f"rolling_{rolling_interval}"],
         title="Difficulty",
     )
-    fig.update_layout(**layout_template)
+    fig.update_layout(**graph_util.get_timeframe_layout(
+        start_timestamp,
+        end_timestamp
+    ))
     return fig
 
-def get_mining_time(blocks: list[Block]):
+def get_mining_time_figure(start_timestamp: float, end_timestamp: float):
+    blocks = blocks_db_util.load_blocks(start_timestamp)
     timestamps = [
         datetime.datetime.utcfromtimestamp(block.timestamp)
             for block in blocks[:-1]
@@ -136,34 +130,43 @@ def get_mining_time(blocks: list[Block]):
         "timestamps": timestamps,
         "mining_time": mining_time,
     })
-    df["rolling"] = df.mining_time.rolling(100).mean()
+    rolling_interval = 50
+    df[f"rolling_{rolling_interval}"] = (
+        df["mining_time"].rolling(rolling_interval).mean()
+    )
     fig = px.line(
         df,
         x="timestamps",
-        y=["mining_time", "rolling"],
+        y=["mining_time", f"rolling_{rolling_interval}"],
         title="Estimated mining time",
     )
-    fig.update_layout(**layout_template)
+    fig.update_layout(**graph_util.get_timeframe_layout(
+        start_timestamp,
+        end_timestamp
+    ))
     return fig
 
-def get_mining_time_vs_transactions(blocks: list[Block]):
+def get_mining_time_vs_transactions_count_figure(
+    start_timestamp: float,
+    end_timestamp: float,
+):
+    blocks = blocks_db_util.load_blocks(start_timestamp)
     mining_time = [
         current.timestamp - prev.timestamp
             for current, prev in zip(blocks[1:], blocks[:-1])
     ]
-    transactions = [
-        len(block.transactions) for block in blocks[:-1]
-    ]
     df = pd.DataFrame({
         "mining_time": mining_time,
-        "transactions": transactions,
+        "transactions_count": [
+            len(block.transactions) for block in blocks[:-1]
+        ],
     })
     fig = px.scatter(
         df,
-        x="transactions",
+        x="transactions_count",
         y="mining_time",
         trendline="ols",
         trendline_color_override="red",
-        title="Estimated mining time vs transactions",
+        title="Estimated mining time vs transactions count",
     )
     return fig
