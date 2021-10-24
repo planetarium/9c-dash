@@ -38,24 +38,17 @@ def insert_routing_table(routing_table: RoutingTable) -> None:
     con.close()
     return
 
-def delete_routing_table(timestamp: float) -> None:
+def insert_routing_tables(routing_tables: list[RoutingTable]) -> None:
     con = sqlite3.connect(DB_PATH)
     cur = con.cursor()
-    if cur.execute(
-        "SELECT EXISTS(SELECT timestamp FROM routing_tables WHERE timestamp=(?))",
-        [timestamp]
-    ).fetchone()[0]:
-        cur.execute(
-            "DELETE FROM routing_tables WHERE timestamp=(?)",
-            [timestamp],
-        )
-        con.commit()
-        con.close()
-        return
-    else:
-        con.commit()
-        con.close()
-        raise KeyError(f"Given timestamp {timestamp} not found in database.")
+    cur.executemany(
+        "INSERT INTO routing_tables VALUES (?, ?)",
+        [[routing_table.timestamp, json.dumps(routing_table.to_dict())]
+            for routing_table in routing_tables]
+    )
+    con.commit()
+    con.close()
+    return
 
 def prune_tables() -> None:
     con = sqlite3.connect(DB_PATH)
@@ -67,18 +60,19 @@ def prune_tables() -> None:
     con.commit()
     con.close()
     while len(timestamps) > TABLE_SIZE_LIMIT:
-        delete_routing_table(timestamps.pop(0))
+        timestamps.pop(0)
+    delete_routing_tables(timestamps[0])
     return
 
 def load_routing_table(timestamp: float) -> RoutingTable:
     con = sqlite3.connect(DB_PATH)
     cur = con.cursor()
     if cur.execute(
-        "SELECT EXISTS(SELECT timestamp FROM routing_tables WHERE timestamp=(?))",
+        "SELECT EXISTS(SELECT timestamp FROM routing_tables WHERE timestamp = (?))",
         [timestamp],
     ).fetchone()[0]:
         routing_table = RoutingTable.from_dict(json.loads(cur.execute(
-            "SELECT routing_table FROM routing_tables WHERE timestamp=(?)",
+            "SELECT routing_table FROM routing_tables WHERE timestamp = (?)",
             [timestamp],
         ).fetchone()[0]))
         con.commit()
@@ -89,13 +83,45 @@ def load_routing_table(timestamp: float) -> RoutingTable:
         con.close()
         raise KeyError(f"Given timestamp {timestamp} not found in database.")
 
-def load_routing_tables() -> list[RoutingTable]:
+def load_routing_tables(timestamp: float=0.0) -> list[RoutingTable]:
     con = sqlite3.connect(DB_PATH)
     cur = con.cursor()
-    timestamps = [
-        row[0] for row
-            in cur.execute("SELECT timestamp FROM routing_tables").fetchall()
-    ]
+    rows = cur.execute(
+        "SELECT routing_table FROM routing_tables WHERE timestamp >= (?)",
+        [timestamp],
+    ).fetchall()
     con.commit()
     con.close()
-    return [load_routing_table(timestamp) for timestamp in timestamps]
+    return [
+        RoutingTable.from_dict(json.loads(row[0])) for row in rows
+    ]
+
+def delete_routing_table(timestamp: float) -> None:
+    con = sqlite3.connect(DB_PATH)
+    cur = con.cursor()
+    if cur.execute(
+        "SELECT EXISTS(SELECT timestamp FROM routing_tables WHERE timestamp = (?))",
+        [timestamp]
+    ).fetchone()[0]:
+        cur.execute(
+            "DELETE FROM routing_tables WHERE timestamp = (?)",
+            [timestamp],
+        )
+        con.commit()
+        con.close()
+        return
+    else:
+        con.commit()
+        con.close()
+        raise KeyError(f"Given timestamp {timestamp} not found in database.")
+
+def delete_routing_tables(timestamp: float) -> None:
+    con = sqlite3.connect(DB_PATH)
+    cur = con.cursor()
+    cur.execute(
+        "DELETE FROM routing_tables WHERE timestamp < (?)",
+        [timestamp],
+    )
+    con.commit()
+    con.close()
+    return
