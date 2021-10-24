@@ -38,12 +38,14 @@ if __name__ == "__main__":
             old_blocks = blocks_db_util.load_blocks()
             if not old_blocks:
                 new_blocks = get_blocks(limits[-1])
-                for block in new_blocks:
-                    blocks_db_util.insert_block(block)
+                blocks_db_util.insert_blocks(new_blocks)
             else:
                 for limit in limits:
                     new_blocks = get_blocks(limit)
-                    branching_block = find_branching_block(old_blocks, new_blocks)
+                    branching_block = find_branching_block(
+                        old_blocks,
+                        new_blocks,
+                    )
                     if branching_block:
                         break
                 if branching_block:
@@ -57,8 +59,7 @@ if __name__ == "__main__":
                     ]
                     for block in blocks_to_delete:
                         blocks_db_util.delete_block(block.timestamp)
-                    for block in blocks_to_insert:
-                        blocks_db_util.insert_block(block)
+                    blocks_db_util.insert_blocks(blocks_to_insert)
                 # something went horribly wrong
                 # start from scratch
                 else:

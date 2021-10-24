@@ -38,6 +38,17 @@ def insert_block(block: Block) -> None:
     con.close()
     return
 
+def insert_blocks(blocks: list[Block]) -> None:
+    con = sqlite3.connect(DB_PATH)
+    cur = con.cursor()
+    cur.executemany(
+        "INSERT INTO blocks VALUES (?, ?)",
+        [[block.timestamp, json.dumps(block.to_dict())] for block in blocks],
+    )
+    con.commit()
+    con.close()
+    return
+
 def prune_tables() -> None:
     con = sqlite3.connect(DB_PATH)
     cur = con.cursor()

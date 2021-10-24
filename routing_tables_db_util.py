@@ -38,6 +38,18 @@ def insert_routing_table(routing_table: RoutingTable) -> None:
     con.close()
     return
 
+def insert_routing_tables(routing_tables: list[RoutingTable]) -> None:
+    con = sqlite3.connect(DB_PATH)
+    cur = con.cursor()
+    cur.executemany(
+        "INSERT INTO routing_tables VALUES (?, ?)",
+        [[routing_table.timestamp, json.dumps(routing_table.to_dict())]
+            for routing_table in routing_tables]
+    )
+    con.commit()
+    con.close()
+    return
+
 def prune_tables() -> None:
     con = sqlite3.connect(DB_PATH)
     cur = con.cursor()
