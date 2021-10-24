@@ -1,9 +1,13 @@
 from __future__ import annotations
+import os
+import pathlib
 import sqlite3
 import json
 from const import table_size_limit as TABLE_SIZE_LIMIT
 from const import blocks_db_path as DB_PATH
 from model.block import Block
+
+DB_PATH = os.path.join(pathlib.Path(__file__).parent.absolute(), DB_PATH)
 
 def create_db() -> None:
     con = sqlite3.connect(DB_PATH)
