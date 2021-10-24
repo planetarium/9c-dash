@@ -102,6 +102,20 @@ def serve_layout():
                             ),
                         ],
                     ),
+                    html.Hr(),
+                    html.Div(
+                        children=[
+                            dcc.Graph(
+                                id="action_type_distribution_figure",
+                            ),
+                            dcc.Dropdown(
+                                id="action_type_distribution_figure_timeframe",
+                                options=option.timeframe_options,
+                                value="1h",
+                                clearable=False,
+                            ),
+                        ],
+                    ),
                 ],
             ),
         ]), width={"size": 8, "offset": 2}),
@@ -181,6 +195,20 @@ def update_mining_time_vs_transactions_count_figure(timeframe_value: str):
     start_timestamp = (now - delta).timestamp()
     end_timestamp = now.timestamp()
     return graphs.get_mining_time_vs_transactions_count_figure(
+        start_timestamp,
+        end_timestamp,
+    )
+
+@app.callback(
+    Output("action_type_distribution_figure", "figure"),
+    Input("action_type_distribution_figure_timeframe", "value"),
+)
+def update_action_type_distribution_figure(timeframe_value: str):
+    now = datetime.datetime.now()
+    delta = option.timeframe_value_to_timedelta[timeframe_value]
+    start_timestamp = (now - delta).timestamp()
+    end_timestamp = now.timestamp()
+    return graphs.get_action_type_distribution_figure(
         start_timestamp,
         end_timestamp,
     )
