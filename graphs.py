@@ -182,6 +182,12 @@ def get_action_type_distribution_figure(
             for transaction in block.transactions
             for action in transaction.actions
     ]
+    actions = actions + [
+        "null"
+            for block in blocks
+            for transaction in block.transactions
+                if not transaction.actions
+    ]
     series = pd.Series(actions).value_counts()
     df = pd.DataFrame({
         "action_type": series.index,
