@@ -170,3 +170,27 @@ def get_mining_time_vs_transactions_count_figure(
         title="Estimated mining time vs transactions count",
     )
     return fig
+
+def get_action_type_distribution_figure(
+    start_timestamp: float,
+    end_timestamp: float,
+):
+    blocks = blocks_db_util.load_blocks(start_timestamp)
+    actions = [
+        action
+            for block in blocks
+            for transaction in block.transactions
+            for action in transaction.actions
+    ]
+    series = pd.Series(actions).value_counts()
+    df = pd.DataFrame({
+        "action_type": series.index,
+        "count": series.values
+    })
+    fig = px.pie(
+        df,
+        names="action_type",
+        values="count",
+        title="Action type distribution",
+    )
+    return fig
