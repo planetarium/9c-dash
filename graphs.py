@@ -182,6 +182,7 @@ def get_action_type_distribution_figure(
             for transaction in block.transactions
             for action in transaction.actions
     ]
+    actions = [action if action else "undefined" for action in actions]
     actions = actions + [
         "null"
             for block in blocks
