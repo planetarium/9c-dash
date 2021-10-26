@@ -83,11 +83,15 @@ class Block:
 
     @classmethod
     def raw_to_dict(cls, raw: dict) -> dict:
+        if raw["previousBlock"]:
+            prev = raw["previousBlock"]["hash"]
+        else:
+            prev = "null"
         return {
             "timestamp": cls.isoformat_to_timestamp(raw["timestamp"]),
             "index_": raw["index"],
             "hash_": raw["hash"],
-            "prev": raw["previousBlock"]["hash"],
+            "prev": prev,
             "difficulty": raw["difficulty"],
             "transactions": [Transaction.raw_to_dict(transaction_raw)
                 for transaction_raw in raw["transactions"]
