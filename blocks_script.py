@@ -2,11 +2,17 @@
 
 from __future__ import annotations
 import os
+import pathlib
 import time
 import requests
 import const
 import blocks_db_util
-from model import Block, Transaction
+from model import Block
+
+DB_PATH = os.path.join(
+    pathlib.Path(__file__).parent.absolute(),
+    const.blocks_db_path,
+)
 
 def get_blocks(limit: int) -> list[Block]:
     response = requests.post(
@@ -28,7 +34,7 @@ def find_branching_block(
     return None
 
 if __name__ == "__main__":
-    if not os.path.exists(const.blocks_db_path):
+    if not os.path.exists(DB_PATH):
         blocks_db_util.create_db()
         blocks_db_util.create_tables()
 

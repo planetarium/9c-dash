@@ -2,11 +2,17 @@
 
 from __future__ import annotations
 import os
+import pathlib
 import time
 import requests
 import const
 import routing_tables_db_util
 from model import RoutingTable
+
+DB_PATH = os.path.join(
+    pathlib.Path(__file__).parent.absolute(),
+    const.routing_tables_db_path,
+)
 
 def get_table() -> RoutingTable:
     response = requests.post(
@@ -18,7 +24,7 @@ def get_table() -> RoutingTable:
     return RoutingTable.from_dict(RoutingTable.raw_to_dict(response))
 
 if __name__ == "__main__":
-    if not os.path.exists(const.routing_tables_db_path):
+    if not os.path.exists(DB_PATH):
         routing_tables_db_util.create_db()
         routing_tables_db_util.create_tables()
 
